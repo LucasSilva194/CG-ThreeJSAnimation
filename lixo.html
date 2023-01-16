@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="UTF-8" />
+  <title>TRASH SPIDER</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+  <body>
+    <script type="module">
+      import * as THREE from "./libs/three.module.js";
+      import { OrbitControls } from "./libs/OrbitControls.js";
+      import * as BufferGeometryUtils from "./libs/BufferGeometryUtils.js";
+
+      //GLOBAL VARIABLES
+      let renderer = null,
+        scene = null,
+        camera = null,
+        light = null,
+        controls = null,
+        pointLightHelper = null;
+
+      //SPIDER VARIABLES
+      let spider,
+        spider_body,
+        spider_head,
+        fang1,
+        fang2,
+        fang3,
+        fang4,
+        fangs_joint,
+        fangs_end1,
+        fangs_end2,
+        right_leg1,
+        right_leg2,
+        right_leg3,
+        left_leg1,
+        left_leg2,
+        left_leg3,
+        right_foot1,
+        right_foot2,
+        right_foot3,
+        left_foot1,
+        left_foot2,
+        left_foot3;
+
+      //SPIDER ANIMATION VARIABLES
+      let animationRunning = false;
+      let speed = 0.05;
+      let direction = 1;
+      let legPivot1 = 0;
+      let legPivot2 = 0;
+      let legPivot3 = 0;
+      let legSpeed, legSpeed2, legSpeed3;
+      let pivot, pivot2, pivot3, pivot4, pivot5, pivot6;
+      let moveUp,
+        moveDown,
+        moveLeft,
+        moveRight,
+        jump = false;
+      let xPosition = 0;
+      let xSpeed = 0.05;
+      let yPosition = 0;
+      let ySpeed = 0.05;
+      let gravity = 0.008;
+
+      let keyIsPressed = false;
+
+      window.onload = function init() {
+        /*********************
+         * SCENE
+         * *******************/
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        /*********************
+         * CAMERA
+         * *******************/
+        const aspect = window.innerWidth / window.innerHeight;
+        camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+        camera.position.set(0, 6.5, 19);
+
+        /*********************
+         * RENDERER
+         * *******************/
+        renderer = new THREE.WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+
+        /*********************
+         * CONTROLS
+         *********************/
+        controls = new OrbitControls(camera, renderer.domElement);
+
+        // Add lights
+        light = new THREE.PointLight(0xaaaaaa);
+        light.position.set(0, 6, 8);
+        scene.add(light);
+
+        pointLightHelper = new THREE.PointLightHelper(light, 1);
+        scene.add(pointLightHelper);
+
+        let ambient = new THREE.AmbientLight(0x888888);
+        scene.add(ambient);
+
+        const textureLoader = new THREE.TextureLoader();
+
+        const furBaseColor = textureLoader.load(
+          "./textures/Fur/Abstract_010_basecolor.jpg"
+        );
+        const furNormalMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_normal.jpg"
+        );
+        const furRoughnessMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_roughness.jpg"
+        );
+        const furMetalnessMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_ambientOcclusion.jpg"
+        );
+        const furDisplacementMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_height.png"
+        );
+
+        const skinBaseColor = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_COLOR.jpg"
+        );
+
+        const skinNormalMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_NORM.jpg"
+        );
+
+        const skinRoughnessMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_ROUGH.jpg"
+        );
+
+        const skinMetalnessMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_OCC.jpg"
+        );
+
+        const skinDisplacementMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_DISP.png"
+        );
+
+        const headBaseColor = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_basecolor.jpg"
+        );
+
+        const headNormalMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_normal.jpg"
+        );
+
+        const headRoughnessMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_roughness.jpg"
+        );
+
+        const headMetalnessMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_ambientOcclusion.jpg"
+        );
+
+        const headDisplacementMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_height.png"
+        );
+
+        /*********************
+         * SPIDER
+         * *******************/
+
+        //SPIDER GROUP
+        spider = new THREE.Group();
+
+        //SPIDER GEOMETRIES
+        let body_geometry = new THREE.SphereGeometry(1, 64, 64);
+        let head_geometry = new THREE.SphereGeometry(0.7, 64, 64);
+        let fangs_geometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 16,8);
+        let fangs_joint_geometry = new THREE.SphereGeometry(0.05, 10, 8);
+        let leg_geometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5,32,32);
+        let feet = new THREE.SphereGeometry(0.15, 16, 16);
+
+        //SPIDER MATERIALS
+        let leg_material = new THREE.MeshStandardMaterial({
+          map: furBaseColor,
+          normalMap: furNormalMap,
+          roughnessMap: furRoughnessMap,
+          metalnessMap: furMetalnessMap,
+          displacementMap: furDisplacementMap,
+          displacementScale: 0.3,
+          
+        });
+
+        let skin_material = new THREE.MeshStandardMaterial({
+          map: skinBaseColor,
+          normalMap: skinNormalMap,
+          roughnessMap: skinRoughnessMap,
+          metalnessMap: skinMetalnessMap,
+          displacementMap: skinDisplacementMap,
+          displacementScale: 0.2,
+        });
+
+        let head_material = new THREE.MeshStandardMaterial({
+          map: headBaseColor,
+          normalMap: headNormalMap,
+          roughnessMap: headRoughnessMap,
+          metalnessMap: headMetalnessMap,
+          displacementMap: headDisplacementMap,
+          displacementScale: 0.1,
+        });
+
+        //default mesh material
+        let default_material = new THREE.MeshStandardMaterial({
+          color: 0x00ff00,
+        });
+
+        //ADD BODY SPHERE
+        spider_body = new THREE.Mesh(body_geometry, skin_material);
+        spider_body.position.set(0, 0, 0);
+
+        spider.add(spider_body);
+
+        //ADD HEAD SPHERE
+        spider_head = new THREE.Mesh(head_geometry, head_material);
+        spider_head.position.set(0, 0, -1.2);
+
+        spider.add(spider_head);
+
+        //RIGHT FANGS
+        fang1 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang1.position.set(0.4, -0.3, -0.4);
+        fang1.rotation.x = Math.PI / 4;
+        fang1.rotation.z = Math.PI / 6;
+
+        fang2 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang2.position.set(-0.2, -0.2, 0);
+        fang2.rotation.x = Math.PI / 4;
+        fang2.rotation.z = Math.PI / 2;
+
+        fangs_joint = new THREE.Mesh(fangs_joint_geometry, leg_material);
+        fangs_joint.position.set(0, -0.2, 0);
+
+        fangs_end1 = new THREE.Mesh(fangs_joint_geometry, skin_material);
+        fangs_end1.position.set(0, 0.2, 0);
+
+        fang1.add(fangs_joint);
+        fang2.add(fangs_end1);
+        fang1.add(fang2);
+
+        spider_head.add(fang1);
+
+        //LEFT FANGS
+        fang3 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang3.position.set(-0.4, -0.3, -0.4);
+        fang3.rotation.x = Math.PI / 4;
+        fang3.rotation.z = -Math.PI / 6;
+
+        fang4 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang4.position.set(0.2, -0.2, 0);
+        fang4.rotation.x = Math.PI / 4;
+        fang4.rotation.z = -Math.PI / 2;
+
+        fangs_joint = new THREE.Mesh(fangs_joint_geometry, leg_material);
+        fangs_joint.position.set(0, -0.2, 0);
+
+        fangs_end2 = new THREE.Mesh(fangs_joint_geometry, skin_material);
+        fangs_end2.position.set(0, 0.2, 0);
+
+        fang3.add(fangs_joint);
+        fang4.add(fangs_end2);
+        fang3.add(fang4);
+
+        spider_head.add(fang3);
+
+        //RIGHT LEG 1
+        right_leg1 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot1 = new THREE.Mesh(feet, head_material);
+        right_foot1.position.set(0, -0.8, 0);
+        right_leg1.add(right_foot1);
+
+        spider.add(right_leg1);
+
+        //RIGHT LEG PIVOT
+        pivot = new THREE.Object3D();
+        scene.add(pivot);
+        pivot.position.set(0.9, -0.2, 0.7);
+        spider.add(pivot);
+        right_leg1.position.set(0, -0.2, 0);
+        right_leg1.rotation.x = -Math.PI / 4;
+        right_leg1.rotation.z = Math.PI / 4;
+        pivot.add(right_leg1);
+
+        //RIGHT LEG 2
+        right_leg2 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot2 = new THREE.Mesh(feet, head_material);
+        right_foot2.position.set(0, -0.8, 0);
+        right_leg2.add(right_foot2);
+
+        spider.add(right_leg2);
+
+        //RIGHT LEG PIVOT 2
+        pivot2 = new THREE.Object3D();
+        scene.add(pivot2);
+        pivot2.position.set(1.1, -0.2, 0);
+        spider.add(pivot2);
+        right_leg2.position.set(0, -0.2, 0);
+        right_leg2.rotation.z = Math.PI / 3;
+        pivot2.add(right_leg2);
+
+        //RIGHT LEG 3
+        right_leg3 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot3 = new THREE.Mesh(feet, head_material);
+        right_foot3.position.set(0, -0.8, 0);
+        right_leg3.add(right_foot3);
+
+        spider.add(right_leg3);
+
+        //RIGHT LEG PIVOT 3
+        pivot3 = new THREE.Object3D();
+        scene.add(pivot3);
+        pivot3.position.set(0.9, -0.2, -0.7);
+        spider.add(pivot3);
+        right_leg3.position.set(0, -0.2, 0);
+        right_leg3.rotation.x = Math.PI / 4;
+        right_leg3.rotation.z = Math.PI / 4;
+        pivot3.add(right_leg3);
+
+        //LEFT LEG 1
+        left_leg1 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot1 = new THREE.Mesh(feet, head_material);
+        left_foot1.position.set(0, -0.8, 0);
+        left_leg1.add(left_foot1);
+
+        spider.add(left_leg1);
+
+        //LEFT LEG PIVOT 1
+        pivot4 = new THREE.Object3D();
+        scene.add(pivot4);
+        pivot4.position.set(-0.9, -0.2, 0.7);
+        spider.add(pivot4);
+        left_leg1.position.set(0, -0.2, 0);
+        left_leg1.rotation.x = -Math.PI / 4;
+        left_leg1.rotation.z = -Math.PI / 4;
+        pivot4.add(left_leg1);
+
+        //LEFT LEG 2
+        left_leg2 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot2 = new THREE.Mesh(feet, head_material);
+        left_foot2.position.set(0, -0.8, 0);
+        left_leg2.add(left_foot2);
+
+        spider.add(left_leg2);
+
+        //LEFT LEG PIVOT 2
+        pivot5 = new THREE.Object3D();
+        scene.add(pivot5);
+        pivot5.position.set(-1.1, -0.2, 0);
+        spider.add(pivot5);
+        left_leg2.position.set(0, -0.2, 0);
+        left_leg2.rotation.z = -Math.PI / 3;
+        pivot5.add(left_leg2);
+
+        //LEFT LEG 3
+        left_leg3 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot3 = new THREE.Mesh(feet, head_material);
+        left_foot3.position.set(0, -0.8, 0);
+        left_leg3.add(left_foot3);
+
+        spider.add(left_leg3);
+
+        //LEFT LEG PIVOT 3
+        pivot6 = new THREE.Object3D();
+        scene.add(pivot6);
+        pivot6.position.set(-0.9, -0.2, -0.7);
+        spider.add(pivot6);
+        left_leg3.position.set(0, -0.2, 0);
+        left_leg3.rotation.x = Math.PI / 4;
+        left_leg3.rotation.z = -Math.PI / 4;
+        pivot6.add(left_leg3);
+
+        scene.add(spider);
+
+        renderer.setAnimationLoop(render);
+      };
+
+      function render() {
+        // move the light, harmonically
+        light.position.x = 2 * Math.sin(Date.now() / 1000);
+        pointLightHelper.update();
+
+        // makes the spider breathe
+        spider_head.position.y = 0.05 * Math.sin(Date.now() / 700);
+        spider_body.position.y = 0.05 * Math.sin(Date.now() / 700);
+
+        //move the fangs 25 degrees in a loop
+        fang1.rotation.z =
+          Math.PI / 4 + (Math.PI / 8) * Math.sin(Date.now() / 400);
+        fang3.rotation.z =
+          -Math.PI / 4 - (Math.PI / 8) * Math.sin(Date.now() / 400);
+
+        // conditions to move the spider
+        if (moveUp) {
+          pivot.rotation.x += 0.01;
+          pivot2.rotation.x += 0.01;
+          pivot3.rotation.x += 0.01;
+          pivot4.rotation.x -= 0.01;
+          pivot5.rotation.x -= 0.01;
+          pivot6.rotation.x -= 0.01;
+          direction = -1;
+          legSpeed = 0.2;
+          legSpeed2 = 0.25;
+          legSpeed3 = 0.3;
+          xPosition -= xSpeed;
+          spider.translateX(xSpeed);
+          animationRunning = true;
+        }
+        if (moveDown) {
+          pivot.rotation.x -= 0.01;
+          pivot2.rotation.x -= 0.01;
+          pivot3.rotation.x -= 0.01;
+          pivot4.rotation.x += 0.01;
+          pivot5.rotation.x += 0.01;
+          pivot6.rotation.x += 0.01;
+          direction = 1;
+          legSpeed = -0.2;
+          legSpeed2 = -0.25;
+          legSpeed3 = -0.3;
+          xPosition += xSpeed;
+          spider.translateX(-xSpeed);
+          animationRunning = true;
+        }
+        if (moveLeft) {
+          spider.rotation.y += 0.1;
+        }
+        if (moveRight) {
+          spider.rotation.y -= 0.1;
+        }
+
+        //make the spider jump
+        if (jump) {
+          spider.translateY(ySpeed);
+          yPosition += ySpeed;
+          ySpeed -= gravity;
+          if (yPosition < 0) {
+            yPosition = 0;
+            ySpeed = 0.1;
+            jump = false;
+          }
+        }
+
+        if (animationRunning) {
+          spider.translateZ(speed * direction);
+          legPivot1 += legSpeed * direction;
+          legPivot2 -= legSpeed2 * direction;
+          legPivot3 += legSpeed3 * direction;
+          pivot.rotation.x = Math.sin(legPivot1);
+          pivot2.rotation.x = Math.sin(legPivot3);
+          pivot3.rotation.x = Math.sin(legPivot2);
+          pivot4.rotation.x = Math.sin(legPivot2);
+          pivot5.rotation.x = Math.sin(legPivot1);
+          pivot6.rotation.x = Math.sin(legPivot3);
+        }
+
+        // Render the scene
+        renderer.render(scene, camera);
+
+        controls.update();
+      }
+
+      /*****************************
+       * KEYBOARD EVENTS
+       * ***************************/
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key == "w") {
+          moveUp = true;
+        }
+
+        if (event.key == "s") {
+          moveDown = true;
+        }
+
+        if (event.key == "a") {
+          moveLeft = true;
+        }
+
+        if (event.key == "d") {
+          moveRight = true;
+        }
+
+        if (event.key == " ") {
+          jump = true;
+        }
+      });
+
+      document.addEventListener("keyup", (event) => {
+        if (event.key == "w") {
+          moveUp = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "s") {
+          moveDown = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "a") {
+          moveLeft = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "d") {
+          moveRight = false;
+          animationRunning = false;
+        }
+      });
+    </script>
+  </body>
+</html>
