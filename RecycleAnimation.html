@@ -4,9 +4,43 @@
     <title>Recycle Animation</title>
     <style>
       body {
-        /* set margin to 0 and overflow to hidden, to use the complete page */
-        margin: 0;
+        background-color: #47e4dd;
+        background: rgba(54, 219, 214, 1);
+        background: -moz-linear-gradient(
+          top,
+          rgba(54, 219, 214, 1) 0%,
+          rgba(236, 231, 199, 1) 100%
+        );
+        background: -webkit-gradient(
+          left top,
+          left bottom,
+          color-stop(0%, rgba(54, 219, 214, 1)),
+          color-stop(100%, rgba(236, 231, 199, 1))
+        );
+        background: -webkit-linear-gradient(
+          top,
+          rgba(54, 219, 214, 1) 0%,
+          rgba(236, 231, 199, 1) 100%
+        );
+        background: -o-linear-gradient(
+          top,
+          rgba(54, 219, 214, 1) 0%,
+          rgba(236, 231, 199, 1) 100%
+        );
+        background: -ms-linear-gradient(
+          top,
+          rgba(54, 219, 214, 1) 0%,
+          rgba(236, 231, 199, 1) 100%
+        );
+        background: linear-gradient(
+          to bottom,
+          rgba(54, 219, 214, 1) 0%,
+          rgba(236, 231, 199, 1) 100%
+        );
+        filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#36dbd6', endColorstr='#ece7c7', GradientType=0 );
         overflow: hidden;
+        margin: 0px;
+        font-family: Arial, sans-serif;
       }
     </style>
   </head>
@@ -27,13 +61,60 @@
 
       let verts = [];
 
+      //SPIDER VARIABLES
+      let spider,
+        spider_body,
+        spider_head,
+        fang1,
+        fang2,
+        fang3,
+        fang4,
+        fangs_joint,
+        fangs_end1,
+        fangs_end2,
+        right_leg1,
+        right_leg2,
+        right_leg3,
+        left_leg1,
+        left_leg2,
+        left_leg3,
+        right_foot1,
+        right_foot2,
+        right_foot3,
+        left_foot1,
+        left_foot2,
+        left_foot3;
+
+      //SPIDER ANIMATION VARIABLES
+      let animationRunning = false;
+      let speed = 0.005;
+      let direction = 1;
+      let legPivot1 = 0;
+      let legPivot2 = 0;
+      let legPivot3 = 0;
+      let legSpeed, legSpeed2, legSpeed3;
+      let pivot, pivot2, pivot3, pivot4, pivot5, pivot6;
+      let moveUp,
+        moveDown,
+        moveLeft,
+        moveRight,
+        jump = false;
+      let xPosition = 0;
+      let xSpeed = 0.001;
+      let yPosition = 0;
+      let ySpeed = 0.001;
+      let gravity = 0.0008;
+
+      let keyIsPressed = false;
+
       window.onload = function init() {
         /*********************
          * SCENE
          * *******************/
         // create an empty scene, that will hold all our elements such as objects, cameras and lights
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffffff);
+        scene.background = new THREE.Color(0x47e4dd);
+        scene.fog = new THREE.Fog(0xece9ca, 100, 400);
 
         /*********************
          * CAMERA
@@ -41,7 +122,7 @@
         // create a camera, which defines where we're looking at
         const aspect = window.innerWidth / window.innerHeight;
         camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
-        camera.position.set(0, 6.5, 19);
+        camera.position.set(0, 20, 60);
 
         /*********************
          * RENDERER
@@ -60,7 +141,7 @@
 
         // Add lights
         light = new THREE.PointLight(0xaaaaaa);
-        light.position.set(0, 6, 8);
+        light.position.set(0, 40, 8);
         scene.add(light);
 
         pointLightHelper = new THREE.PointLightHelper(light, 1);
@@ -127,88 +208,29 @@
          *********************/
 
         const plane = new THREE.Mesh(
-          new THREE.PlaneGeometry(30, 30, 512, 512),
+          new THREE.CylinderGeometry(30, 15, 10, 54, 16),
           new THREE.MeshStandardMaterial({
             map: sandBasecolor,
             normalMap: sandNormalMap,
             displacementMap: SandHeightMap,
-            displacementScale: 0.7,
+            displacementScale: 0.8,
+            displacementBias: -0.65,
           })
         );
         plane.material.side = THREE.DoubleSide;
-        plane.position.y = 0.45;
+        plane.position.y = -2;
         plane.position.x = 0;
-        plane.rotation.x = -Math.PI / 2;
         scene.add(plane);
-
-      /*   const plane2 = new THREE.Mesh(
-          new THREE.PlaneGeometry(15, 0.3, 512, 512),
-          new THREE.MeshStandardMaterial({
-            map: sandBasecolor,
-            normalMap: sandNormalMap,
-            displacementMap: SandHeightMap,
-            displacementScale: 0.1,
-          })
-        );
-        plane2.material.side = THREE.DoubleSide;
-        plane2.position.y = 0.95;
-        plane2.position.x = 0;
-        plane2.position.z = 7.41;
-        scene.add(plane2);
-
-        const plane3 = new THREE.Mesh(
-          new THREE.PlaneGeometry(15, 0.3, 512, 512),
-          new THREE.MeshStandardMaterial({
-            map: sandBasecolor,
-            normalMap: sandNormalMap,
-            displacementMap: SandHeightMap,
-            displacementScale: 0.1,
-          })
-        );
-        plane3.material.side = THREE.DoubleSide;
-        plane3.position.y = 0.95;
-        plane3.position.x = 7.56;
-        plane3.rotation.y = -Math.PI / 2;
-        scene.add(plane3);
-
-        const plane4 = new THREE.Mesh(
-          new THREE.PlaneGeometry(15, 0.3, 512, 512),
-          new THREE.MeshStandardMaterial({
-            map: sandBasecolor,
-            normalMap: sandNormalMap,
-            displacementMap: SandHeightMap,
-            displacementScale: 0.1,
-          })
-        );
-        plane4.material.side = THREE.DoubleSide;
-        plane4.position.y = 0.95;
-        plane4.position.x = -7.4;
-        plane4.rotation.y = -Math.PI / 2;
-        scene.add(plane4);
-
-        const plane5 = new THREE.Mesh(
-          new THREE.PlaneGeometry(15, 0.3, 512, 512),
-          new THREE.MeshStandardMaterial({
-            map: sandBasecolor,
-            normalMap: sandNormalMap,
-            displacementMap: SandHeightMap,
-            displacementScale: 0.1,
-          })
-        );
-        plane5.material.side = THREE.DoubleSide;
-        plane5.position.y = 0.95;
-        plane5.position.x = 0;
-        plane5.position.z = -7.57;
-        scene.add(plane5); */
 
         /*********************
          * PLANO DA AGUA
          * *******************/
         const geometries = [];
 
-        let tuft1 = new THREE.PlaneGeometry(120, 120, 8, 8);
+        let tuft1 = new THREE.BoxGeometry(120, 120, 3, 8, 8, 1);
         tuft1.translate(0, 0, 0);
         2;
+        jitter(tuft1, 1);
         geometries.push(tuft1);
 
         const waterGeometry =
@@ -221,7 +243,8 @@
             displacementMap: waterHeightMap,
             roughnessMap: waterRoughnessMap,
             metalnessMap: waterMetalnessMap,
-            displacementScale: 0.5,
+            displacementScale: 1,
+            displacementBias: -0.6,
           })
         );
         water.position.y = 0;
@@ -245,10 +268,20 @@
 
         const geometries_pebbles = [];
 
-        const rocks1 = new THREE.SphereGeometry(1.5, 64, 64);
+        const rocks1 = new THREE.SphereGeometry(2, 64, 64);
         rocks1.translate(-2, 0, 0);
         jitter(rocks1, 0.05);
         geometries_pebbles.push(rocks1);
+
+        const rocks2 = new THREE.SphereGeometry(2, 64, 64);
+        rocks2.translate(-0.5, 0, -0.2);
+        jitter(rocks2, 0.05);
+        geometries_pebbles.push(rocks2);
+
+        const rocks3 = new THREE.SphereGeometry(2, 64, 64);
+        rocks3.translate(0, -1.3, -0.6);
+        jitter(rocks3, 0.05);
+        geometries_pebbles.push(rocks3);
 
         const PebblesGeometry =
           BufferGeometryUtils.mergeBufferGeometries(geometries_pebbles);
@@ -263,9 +296,352 @@
             displacementScale: 0.1,
           })
         );
-        pebbles.position.x = 7;
+        pebbles.position.x = 25;
+        pebbles.position.y = 2.2;
         pebbles.rotation.x = -Math.PI / 2;
+        pebbles.rotation.z = Math.PI / 2;
         scene.add(pebbles);
+
+        const pebbles2 = new THREE.Mesh(
+          PebblesGeometry,
+          new THREE.MeshStandardMaterial({
+            map: rockBasecolor,
+            normalMap: rockNormalMap,
+            displacementMap: rockHeightMap,
+            roughnessMap: rockRoughnessMap,
+            metalnessMap: rockMetalnessMap,
+            displacementScale: 0.1,
+          })
+        );
+        pebbles2.position.x = -25;
+        pebbles2.position.y = 2.2;
+        pebbles2.rotation.x = -Math.PI / 2;
+        pebbles2.rotation.z = Math.PI / 2;
+        scene.add(pebbles2);
+
+        //TREES
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+
+        var leaveDarkMaterial = new THREE.MeshLambertMaterial({
+          color: 0x91e56e,
+        });
+        var leaveLightMaterial = new THREE.MeshLambertMaterial({
+          color: 0xa2ff7a,
+        });
+        var leaveDarkDarkMaterial = new THREE.MeshLambertMaterial({
+          color: 0x71b356,
+        });
+        var stemMaterial = new THREE.MeshLambertMaterial({ color: 0x7d5a4f });
+
+        var stem = new THREE.Mesh(geometry, stemMaterial);
+        stem.position.set(0, 0, 0);
+        stem.scale.set(0.3, 1.5, 0.3);
+
+        var squareLeave01 = new THREE.Mesh(geometry, leaveDarkMaterial);
+        squareLeave01.position.set(0.5, 1.6, 0.5);
+        squareLeave01.scale.set(0.8, 0.8, 0.8);
+
+        var squareLeave02 = new THREE.Mesh(geometry, leaveDarkMaterial);
+        squareLeave02.position.set(-0.4, 1.3, -0.4);
+        squareLeave02.scale.set(0.7, 0.7, 0.7);
+
+        var squareLeave03 = new THREE.Mesh(geometry, leaveDarkMaterial);
+        squareLeave03.position.set(0.4, 1.7, -0.5);
+        squareLeave03.scale.set(0.7, 0.7, 0.7);
+
+        var leaveDark = new THREE.Mesh(geometry, leaveDarkMaterial);
+        leaveDark.position.set(0, 1.2, 0);
+        leaveDark.scale.set(1, 2, 1);
+
+        var leaveLight = new THREE.Mesh(geometry, leaveLightMaterial);
+        leaveLight.position.set(0, 1.2, 0);
+        leaveLight.scale.set(1.1, 0.5, 1.1);
+
+        var tree = new THREE.Group();
+        tree.add(leaveDark);
+        tree.add(leaveLight);
+        tree.add(squareLeave01);
+        tree.add(squareLeave02);
+        tree.add(squareLeave03);
+        tree.add(stem);
+
+        tree.scale.set(4, 4, 4);
+        tree.position.y = 5.5;
+        tree.position.x = 19;
+        tree.position.z = -17;
+
+        scene.add(tree);
+
+        const furBaseColor = textureLoader.load(
+          "./textures/Fur/Abstract_010_basecolor.jpg"
+        );
+        const furNormalMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_normal.jpg"
+        );
+        const furRoughnessMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_roughness.jpg"
+        );
+        const furMetalnessMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_ambientOcclusion.jpg"
+        );
+        const furDisplacementMap = textureLoader.load(
+          "./textures/Fur/Abstract_010_height.png"
+        );
+
+        const skinBaseColor = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_COLOR.jpg"
+        );
+
+        const skinNormalMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_NORM.jpg"
+        );
+
+        const skinRoughnessMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_ROUGH.jpg"
+        );
+
+        const skinMetalnessMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_OCC.jpg"
+        );
+
+        const skinDisplacementMap = textureLoader.load(
+          "./textures/Skin/Abstract_Organic_002_DISP.png"
+        );
+
+        const headBaseColor = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_basecolor.jpg"
+        );
+
+        const headNormalMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_normal.jpg"
+        );
+
+        const headRoughnessMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_roughness.jpg"
+        );
+
+        const headMetalnessMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_ambientOcclusion.jpg"
+        );
+
+        const headDisplacementMap = textureLoader.load(
+          "./textures/Head/Abstract_Organic_004_height.png"
+        );
+
+        /*********************
+         * SPIDER
+         * *******************/
+
+        //SPIDER GROUP
+        spider = new THREE.Group();
+
+        //SPIDER GEOMETRIES
+        let body_geometry = new THREE.SphereGeometry(1, 64, 64);
+        let head_geometry = new THREE.SphereGeometry(0.7, 64, 64);
+        let fangs_geometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 16, 8);
+        let fangs_joint_geometry = new THREE.SphereGeometry(0.05, 10, 8);
+        let leg_geometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 32, 32);
+        let feet = new THREE.SphereGeometry(0.15, 16, 16);
+
+        //SPIDER MATERIALS
+        let leg_material = new THREE.MeshStandardMaterial({
+          map: furBaseColor,
+          normalMap: furNormalMap,
+          roughnessMap: furRoughnessMap,
+          metalnessMap: furMetalnessMap,
+          displacementMap: furDisplacementMap,
+          displacementScale: 0.3,
+        });
+
+        let skin_material = new THREE.MeshStandardMaterial({
+          map: skinBaseColor,
+          normalMap: skinNormalMap,
+          roughnessMap: skinRoughnessMap,
+          metalnessMap: skinMetalnessMap,
+          displacementMap: skinDisplacementMap,
+          displacementScale: 0.2,
+        });
+
+        let head_material = new THREE.MeshStandardMaterial({
+          map: headBaseColor,
+          normalMap: headNormalMap,
+          roughnessMap: headRoughnessMap,
+          metalnessMap: headMetalnessMap,
+          displacementMap: headDisplacementMap,
+          displacementScale: 0.1,
+        });
+
+        //default mesh material
+        let default_material = new THREE.MeshStandardMaterial({
+          color: 0x00ff00,
+        });
+
+        //ADD BODY SPHERE
+        spider_body = new THREE.Mesh(body_geometry, skin_material);
+        spider_body.position.set(0, 0, 0);
+
+        spider.add(spider_body);
+
+        //ADD HEAD SPHERE
+        spider_head = new THREE.Mesh(head_geometry, head_material);
+        spider_head.position.set(0, 0, -1.2);
+
+        spider.add(spider_head);
+
+        //RIGHT FANGS
+        fang1 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang1.position.set(0.4, -0.3, -0.4);
+        fang1.rotation.x = Math.PI / 4;
+        fang1.rotation.z = Math.PI / 6;
+
+        fang2 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang2.position.set(-0.2, -0.2, 0);
+        fang2.rotation.x = Math.PI / 4;
+        fang2.rotation.z = Math.PI / 2;
+
+        fangs_joint = new THREE.Mesh(fangs_joint_geometry, leg_material);
+        fangs_joint.position.set(0, -0.2, 0);
+
+        fangs_end1 = new THREE.Mesh(fangs_joint_geometry, skin_material);
+        fangs_end1.position.set(0, 0.2, 0);
+
+        fang1.add(fangs_joint);
+        fang2.add(fangs_end1);
+        fang1.add(fang2);
+
+        spider_head.add(fang1);
+
+        //LEFT FANGS
+        fang3 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang3.position.set(-0.4, -0.3, -0.4);
+        fang3.rotation.x = Math.PI / 4;
+        fang3.rotation.z = -Math.PI / 6;
+
+        fang4 = new THREE.Mesh(fangs_geometry, leg_material);
+        fang4.position.set(0.2, -0.2, 0);
+        fang4.rotation.x = Math.PI / 4;
+        fang4.rotation.z = -Math.PI / 2;
+
+        fangs_joint = new THREE.Mesh(fangs_joint_geometry, leg_material);
+        fangs_joint.position.set(0, -0.2, 0);
+
+        fangs_end2 = new THREE.Mesh(fangs_joint_geometry, skin_material);
+        fangs_end2.position.set(0, 0.2, 0);
+
+        fang3.add(fangs_joint);
+        fang4.add(fangs_end2);
+        fang3.add(fang4);
+
+        spider_head.add(fang3);
+
+        //RIGHT LEG 1
+        right_leg1 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot1 = new THREE.Mesh(feet, head_material);
+        right_foot1.position.set(0, -0.8, 0);
+        right_leg1.add(right_foot1);
+
+        spider.add(right_leg1);
+
+        //RIGHT LEG PIVOT
+        pivot = new THREE.Object3D();
+        scene.add(pivot);
+        pivot.position.set(0.9, -0.2, 0.7);
+        spider.add(pivot);
+        right_leg1.position.set(0, -0.2, 0);
+        right_leg1.rotation.x = -Math.PI / 4;
+        right_leg1.rotation.z = Math.PI / 4;
+        pivot.add(right_leg1);
+
+        //RIGHT LEG 2
+        right_leg2 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot2 = new THREE.Mesh(feet, head_material);
+        right_foot2.position.set(0, -0.8, 0);
+        right_leg2.add(right_foot2);
+
+        spider.add(right_leg2);
+
+        //RIGHT LEG PIVOT 2
+        pivot2 = new THREE.Object3D();
+        scene.add(pivot2);
+        pivot2.position.set(1.1, -0.2, 0);
+        spider.add(pivot2);
+        right_leg2.position.set(0, -0.2, 0);
+        right_leg2.rotation.z = Math.PI / 3;
+        pivot2.add(right_leg2);
+
+        //RIGHT LEG 3
+        right_leg3 = new THREE.Mesh(leg_geometry, leg_material);
+        right_foot3 = new THREE.Mesh(feet, head_material);
+        right_foot3.position.set(0, -0.8, 0);
+        right_leg3.add(right_foot3);
+
+        spider.add(right_leg3);
+
+        //RIGHT LEG PIVOT 3
+        pivot3 = new THREE.Object3D();
+        scene.add(pivot3);
+        pivot3.position.set(0.9, -0.2, -0.7);
+        spider.add(pivot3);
+        right_leg3.position.set(0, -0.2, 0);
+        right_leg3.rotation.x = Math.PI / 4;
+        right_leg3.rotation.z = Math.PI / 4;
+        pivot3.add(right_leg3);
+
+        //LEFT LEG 1
+        left_leg1 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot1 = new THREE.Mesh(feet, head_material);
+        left_foot1.position.set(0, -0.8, 0);
+        left_leg1.add(left_foot1);
+
+        spider.add(left_leg1);
+
+        //LEFT LEG PIVOT 1
+        pivot4 = new THREE.Object3D();
+        scene.add(pivot4);
+        pivot4.position.set(-0.9, -0.2, 0.7);
+        spider.add(pivot4);
+        left_leg1.position.set(0, -0.2, 0);
+        left_leg1.rotation.x = -Math.PI / 4;
+        left_leg1.rotation.z = -Math.PI / 4;
+        pivot4.add(left_leg1);
+
+        //LEFT LEG 2
+        left_leg2 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot2 = new THREE.Mesh(feet, head_material);
+        left_foot2.position.set(0, -0.8, 0);
+        left_leg2.add(left_foot2);
+
+        spider.add(left_leg2);
+
+        //LEFT LEG PIVOT 2
+        pivot5 = new THREE.Object3D();
+        scene.add(pivot5);
+        pivot5.position.set(-1.1, -0.2, 0);
+        spider.add(pivot5);
+        left_leg2.position.set(0, -0.2, 0);
+        left_leg2.rotation.z = -Math.PI / 3;
+        pivot5.add(left_leg2);
+
+        //LEFT LEG 3
+        left_leg3 = new THREE.Mesh(leg_geometry, leg_material);
+        left_foot3 = new THREE.Mesh(feet, head_material);
+        left_foot3.position.set(0, -0.8, 0);
+        left_leg3.add(left_foot3);
+
+        spider.add(left_leg3);
+
+        //LEFT LEG PIVOT 3
+        pivot6 = new THREE.Object3D();
+        scene.add(pivot6);
+        pivot6.position.set(-0.9, -0.2, -0.7);
+        spider.add(pivot6);
+        left_leg3.position.set(0, -0.2, 0);
+        left_leg3.rotation.x = Math.PI / 4;
+        left_leg3.rotation.z = -Math.PI / 4;
+        pivot6.add(left_leg3);
+
+        spider.position.set(0, 4, 0);
+        scene.add(spider);
 
         // Run the run loop
         renderer.setAnimationLoop(render);
@@ -289,6 +665,79 @@
             currentXposition,
             currentYposition
           );
+
+          // makes the spider breathe
+          spider_head.position.y = 0.05 * Math.sin(Date.now() / 700);
+          spider_body.position.y = 0.05 * Math.sin(Date.now() / 700);
+
+          //move the fangs 25 degrees in a loop
+          fang1.rotation.z =
+            Math.PI / 4 + (Math.PI / 8) * Math.sin(Date.now() / 400);
+          fang3.rotation.z =
+            -Math.PI / 4 - (Math.PI / 8) * Math.sin(Date.now() / 400);
+
+          // conditions to move the spider
+          if (moveUp) {
+            pivot.rotation.x += 0.01;
+            pivot2.rotation.x += 0.01;
+            pivot3.rotation.x += 0.01;
+            pivot4.rotation.x -= 0.01;
+            pivot5.rotation.x -= 0.01;
+            pivot6.rotation.x -= 0.01;
+            direction = -0.01;
+            legSpeed = 0.2;
+            legSpeed2 = 0.25;
+            legSpeed3 = 0.3;
+            xPosition -= xSpeed;
+            spider.translateZ(-xSpeed);
+            animationRunning = true;
+          }
+          if (moveDown) {
+            pivot.rotation.x -= 0.01;
+            pivot2.rotation.x -= 0.01;
+            pivot3.rotation.x -= 0.01;
+            pivot4.rotation.x += 0.01;
+            pivot5.rotation.x += 0.01;
+            pivot6.rotation.x += 0.01;
+            direction = 0.01;
+            legSpeed = -0.2;
+            legSpeed2 = -0.25;
+            legSpeed3 = -0.3;
+            xPosition += xSpeed;
+            spider.translateZ(xSpeed);
+            animationRunning = true;
+          }
+          if (moveLeft) {
+            spider.rotation.y += 0.0002;
+          }
+          if (moveRight) {
+            spider.rotation.y -= 0.0002;
+          }
+
+          //make the spider jump
+          if (jump) {
+            spider.translateY(ySpeed);
+            yPosition += ySpeed;
+            ySpeed -= gravity;
+            if (yPosition < 0) {
+              yPosition += 0;
+              ySpeed = 0.1;
+              jump = false;
+            }
+          }
+
+          if (animationRunning) {
+            spider.translateZ(speed * direction);
+            legPivot1 += legSpeed * direction;
+            legPivot2 -= legSpeed2 * direction;
+            legPivot3 += legSpeed3 * direction;
+            pivot.rotation.x = Math.sin(legPivot1);
+            pivot2.rotation.x = Math.sin(legPivot3);
+            pivot3.rotation.x = Math.sin(legPivot2);
+            pivot4.rotation.x = Math.sin(legPivot2);
+            pivot5.rotation.x = Math.sin(legPivot1);
+            pivot6.rotation.x = Math.sin(legPivot3);
+          }
         }
         // mandatory so that the new position values are rendered again
         water.geometry.attributes.position.needsUpdate = true;
@@ -315,6 +764,54 @@
           );
         }
       }
+
+      /*****************************
+       * KEYBOARD EVENTS
+       * ***************************/
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key == "w") {
+          moveUp = true;
+        }
+
+        if (event.key == "s") {
+          moveDown = true;
+        }
+
+        if (event.key == "a") {
+          moveLeft = true;
+        }
+
+        if (event.key == "d") {
+          moveRight = true;
+        }
+
+        if (event.key == " ") {
+          jump = true;
+        }
+      });
+
+      document.addEventListener("keyup", (event) => {
+        if (event.key == "w") {
+          moveUp = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "s") {
+          moveDown = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "a") {
+          moveLeft = false;
+          animationRunning = false;
+        }
+
+        if (event.key == "d") {
+          moveRight = false;
+          animationRunning = false;
+        }
+      });
     </script>
   </body>
 </html>
